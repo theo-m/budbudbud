@@ -2,9 +2,6 @@
   "name": "budbudbud",
   "version": "0.1.0",
   "private": true,
-  "engines": {
-    "node": "^16.13.0"
-  },
   "scripts": {
     "dev": "concurrently -n NEXT,TSCW,PRSM -c magenta,cyan,red \"next dev\" \"yarn tscw\" \"prisma generate --watch\"",
     "tscw": "tsc --noEmit --incremental --preserveWatchOutput --pretty --watch",
