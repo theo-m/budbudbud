@@ -4,6 +4,7 @@ import { getSession, signOut } from "next-auth/react";
 import trpc from "../client/trpc";
 import Spinner from "../client/components/icons/Spinner";
 import Link from "next/link";
+import Head from "next/head";
 
 export const getServerSideProps: GetServerSideProps = async ({ req }) => {
   const res = await getSession({ req });
@@ -24,6 +25,9 @@ export default function Me({
   );
   return (
     <div className="flex-grow flex flex-col px-4 gap-4 py-2 w-full max-w-xl">
+      <Head>
+        <title>Me</title>
+      </Head>
       <div className="flex items-center gap-4 justify-between">
         <span>Logged in as {user?.email}</span>
         <button

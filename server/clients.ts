@@ -3,9 +3,10 @@ import { Client } from "postmark";
 
 export const mailClient = new Client(process.env.POSTMARK_KEY ?? "");
 
-export const prisma = new PrismaClient({
-  log:
-    process.env.NODE_ENV === "development"
-      ? ["query", "info", "warn", "error"]
-      : ["error"],
-});
+declare global {
+  var prisma: PrismaClient | undefined;
+}
+
+export const prisma = global.prisma || new PrismaClient({ log: ["query"] });
+
+if (process.env.NODE_ENV !== "production") global.prisma = prisma;

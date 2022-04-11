@@ -5,9 +5,12 @@ import { getSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import superjson from "superjson";
 import {
+  ArrowRightIcon,
   CalendarIcon,
+  ChatAltIcon,
   CheckCircleIcon,
-  PlusCircleIcon,
+  ChevronUpIcon,
+  PlusIcon,
   UsersIcon,
 } from "@heroicons/react/solid";
 
@@ -15,6 +18,7 @@ import trpc from "../../client/trpc";
 import Spinner from "../../client/components/icons/Spinner";
 import { groupByIdWithUsers } from "@/server/group/db";
 import Dialog from "../../client/components/Dialog";
+import classNames from "classnames";
 
 export const getServerSideProps: GetServerSideProps = async ({
   req,
@@ -36,6 +40,8 @@ export const getServerSideProps: GetServerSideProps = async ({
 export default function Group({ payload }: { payload: string }) {
   const [showNewUserInput, setShowNewUserInput] = useState(false);
   const [showGroupNameInput, setShowGroupNameInput] = useState(false);
+  const [showBoard, setShowBoard] = useState(true);
+  const [showPeeps, setShowPeeps] = useState(false);
 
   const router = useRouter();
   const groupId = Array.isArray(router.query.id)
@@ -88,7 +94,69 @@ export default function Group({ payload }: { payload: string }) {
             >
               edit
             </button>
+            <button
+              className="ml-auto hover:opacity-80"
+              onClick={() => setShowPeeps(true)}
+            >
+              <UsersIcon height={24} />
+            </button>
           </h1>
+
+          <Dialog
+            isOpen={showPeeps}
+            title="Group members"
+            onClose={() => setShowPeeps(false)}
+          >
+            <div className="flex flex-col gap-4 w-full max-w-md mx-auto">
+              <div className="flex items-center gap-2 mb-4 ">
+                <input
+                  type="email"
+                  name="email"
+                  autoFocus
+                  className="rounded px-2 flex-grow py-1 border placeholder:text-gray-300 focus:outline-primary"
+                  placeholder="email@example.com"
+                  onKeyDown={(e) =>
+                    e.key === "Enter" &&
+                    !!groupId &&
+                    addUser({ groupId, userEmail: e.currentTarget.value })
+                  }
+                  disabled={!groupId}
+                />
+                <button
+                  className="hover:bg-opacity-80 transition focus:rotate-90 transition h-6 w-6 bg-gray-500 text-white rounded-full flex items-center justify-center"
+                  onClick={() => setShowNewUserInput(!showNewUserInput)}
+                >
+                  {addingUser ? <Spinner /> : <PlusIcon height={20} />}
+                </button>
+              </div>
+              <div className="flex flex-col divide-y max-h-[420px]  overflow-y-auto pr-4">
+                {group.users.length > 0
+                  ? group.users.map((u) => (
+                      <div
+                        key={u.userId}
+                        className="flex items-center gap-4 group py-4"
+                      >
+                        <span className="whitespace-nowrap text-gray-500 font-medium">
+                          {u.user.name}
+                        </span>
+                        <span className="text-xs text-gray-300 truncate">
+                          {u.user.email}
+                        </span>
+                        {u.admin ? (
+                          <span className="ml-auto text-xs rounded border text-gray-300 p-1">
+                            admin
+                          </span>
+                        ) : (
+                          <button className="group-hover:opacity-100 opacity-0 transition ml-auto whitespace-nowrap rounded px-1 text-sm text-primary border hover:bg-primary/5 focus:outline-primary">
+                            make admin
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  : "No users yet here"}
+              </div>
+            </div>
+          </Dialog>
 
           <Dialog
             isOpen={showGroupNameInput}
@@ -130,58 +198,67 @@ export default function Group({ payload }: { payload: string }) {
 
           <div className="flex items-center justify-between gap-2 group mt-8">
             <h2 className="text-gray-500 font-bold text-xl my-8 flex items-center gap-4">
-              <UsersIcon height={24} />
-              <span>Peeps</span>
+              <ChatAltIcon height={24} />
+              <span>Board</span>
             </h2>
-            <div className="flex items-center gap-2">
-              {showNewUserInput && (
-                <input
-                  type="email"
-                  name="email"
-                  autoFocus
-                  className="rounded px-2 py-1 border placeholder:text-gray-300 focus:outline-primary"
-                  placeholder="email@example.com"
-                  onKeyDown={(e) =>
-                    e.key === "Enter" &&
-                    !!groupId &&
-                    addUser({ groupId, userEmail: e.currentTarget.value })
-                  }
-                  disabled={!groupId}
-                />
+            <button
+              className={classNames(
+                "h-6 w-6 rounded-full hover:bg-opacity-80 flex items-center justify-center bg-gray-500 text-white transition focus:outline-primary",
+                !showBoard && "rotate-180"
               )}
-              <button
-                className="hover:text-primary transition focus:rotate-90 transition"
-                onClick={() => setShowNewUserInput(!showNewUserInput)}
-              >
-                {addingUser ? <Spinner /> : <PlusCircleIcon height={24} />}
-              </button>
-            </div>
+              onClick={() => setShowBoard(!showBoard)}
+            >
+              <ChevronUpIcon className="mb-0.5" height={24} />
+            </button>
           </div>
-          <div className="flex flex-col divide-y">
-            {group.users.length > 0
-              ? group.users.map((u) => (
-                  <div
-                    key={u.userId}
-                    className="flex items-center gap-4 group py-4"
-                  >
-                    <span className="whitespace-nowrap font-medium">
-                      {u.user.name}
-                    </span>
-                    <span className="text-xs text-gray-300 truncate">
-                      {u.user.email}
-                    </span>
-                    {u.admin ? (
-                      <span className="ml-auto text-xs rounded border text-gray-300 p-1">
-                        admin
-                      </span>
-                    ) : (
-                      <button className="group-hover:opacity-100 opacity-0 transition ml-auto whitespace-nowrap rounded px-1 text-sm text-primary border hover:bg-primary/5 focus:outline-primary">
-                        make admin
-                      </button>
-                    )}
-                  </div>
-                ))
-              : "No users yet here"}
+          <div
+            className="flex flex-col gap-4 board overflow-hidden"
+            data-show={showBoard}
+          >
+            <div className="flex flex-col gap-2 overflow-y-auto">
+              {[
+                { author: "Théo", id: "wo-2924f2fn", msg: "Hey jeudi ok?" },
+                {
+                  author: "Sylvain M",
+                  id: "w2-2924f2fn",
+                  msg: "Lundi mercredi ok pour moi",
+                },
+                {
+                  author: "Théo",
+                  id: "wo-2924f2f3",
+                  msg: "mais pas mal de meetings dans l'aprem...",
+                },
+                {
+                  author: "Gus",
+                  id: "wo-2924f2fe",
+                  msg: "Yes chaud mercredi aussi - #cachiquet!",
+                },
+              ].map((a) => (
+                <div
+                  key={a.id}
+                  className="flex flex-col gap-1 w-fit max-w-[80%] bg-gray-100 rounded-lg p-2 relative"
+                >
+                  <span className="text-xs font-semibold text-primary">
+                    {a.author}
+                  </span>
+                  <p className="pb-1.5">{a.msg}</p>
+                  <span className="absolute right-1 bottom-0 text-xs text-gray-400">
+                    2d ago
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="flex mt-4 items-start gap-4 w-full">
+              <textarea
+                className="p-4 rounded-lg border min-h-[40px] flex-grow placeholder:text-gray-300 focus:outline-primary"
+                placeholder="Type a message"
+                name="message"
+                rows={1}
+              />
+              <span className="flex items-center justify-center w-6 h-6 bg-primary text-white rounded-full">
+                <ArrowRightIcon height={16} />
+              </span>
+            </div>
           </div>
         </>
       )}

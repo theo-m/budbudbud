@@ -31,7 +31,7 @@ export default function Layout({ children }: PropsWithChildren<{}>) {
         </div>
       </nav>
 
-      <main className="text-gray-500 h-[calc(100vh-48px)] w-screen flex flex-col justify-center items-center gap-4">
+      <main className="text-gray-500 min-h-[calc(100vh-48px)] w-screen flex flex-col justify-center items-center gap-4">
         {children}
       </main>
     </>
