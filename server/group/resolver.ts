@@ -6,6 +6,7 @@ import {
   addUserToGroup,
   groupByIdWithUsers,
   GroupWithUsers,
+  updateGroupName,
 } from "@/server/group/db";
 import { ServerErrors } from "@/server/errors";
 import { getUserByEmailOrNull } from "@/server/user/db";
@@ -51,8 +52,9 @@ export default createRouter()
     }),
     resolve: withAuthentication(async ({ groupId, userEmail }, me) => {
       const group = await groupByIdWithUsers(groupId);
-      if (!group.users.find((u) => u.user.email === me.email))
-        throw ServerErrors.PermissionError("not part of this group");
+      const rel = group.users.find((u) => u.user.email === me.email);
+      if (!rel || !rel.admin)
+        throw ServerErrors.PermissionError("need to be admin of the group");
 
       if (group.users.find((u) => u.user.email === userEmail)) return;
 
@@ -85,4 +87,14 @@ export default createRouter()
     }),
   })
 
-  .mutation("updateName", { input: z.string(), resolve: () => {} });
+  .mutation("updateName", {
+    input: z.object({ id: z.string().cuid(), name: z.string().nonempty() }),
+    resolve: withAuthentication(async ({ id, name }, me) => {
+      const group = await groupByIdWithUsers(id);
+      const rel = group.users.find((u) => u.user.email === me.email);
+      if (!rel || !rel.admin)
+        throw ServerErrors.PermissionError("need to be admin of the group");
+      await updateGroupName(id, name);
+      return;
+    }),
+  });

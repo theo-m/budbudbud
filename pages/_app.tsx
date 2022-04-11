@@ -6,13 +6,26 @@ import superjson from "superjson";
 import "../styles/globals.css";
 import type { AppRouter } from "./api/trpc/[...trpc]";
 import Layout from "../client/components/Layout";
+import { ReactElement, ReactNode } from "react";
+import { NextPage } from "next";
 
-function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
+export type NextPageWithLayout = NextPage & {
+  getLayout?: (page: ReactElement) => ReactNode;
+};
+
+type AppPropsWithLayout = AppProps & {
+  Component: NextPageWithLayout;
+};
+
+function MyApp({
+  Component,
+  pageProps: { session, ...pageProps },
+}: AppPropsWithLayout) {
+  const getLayout = Component.getLayout ?? ((page) => <Layout>{page}</Layout>);
+
   return (
     <SessionProvider session={session} refetchInterval={60}>
-      <Layout>
-        <Component {...pageProps} />
-      </Layout>
+      {getLayout(<Component {...pageProps} />)}
     </SessionProvider>
   );
 }

@@ -1,7 +1,7 @@
 import { signIn, useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { ReactElement, useEffect, useState } from "react";
 
 export default function SignIn() {
   const { status } = useSession();
@@ -53,3 +53,5 @@ export default function SignIn() {
     </div>
   );
 }
+
+SignIn.getLayout = (p: ReactElement) => p;

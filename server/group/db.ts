@@ -19,3 +19,6 @@ export type GroupWithUsers = Prisma.PromiseReturnType<
 
 export const addUserToGroup = (groupId: string, userId: string) =>
   prisma.userGroup.create({ data: { groupId, userId, admin: false } });
+
+export const updateGroupName = (groupId: string, name: string) =>
+  prisma.group.update({ where: { id: groupId }, data: { name } });
