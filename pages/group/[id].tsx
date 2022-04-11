@@ -122,7 +122,10 @@ export default function Group({ payload }: { payload: string }) {
                     votes: 1,
                   },
                 ].map((it) => (
-                  <div className="flex flex-col w-32 items-center gap-4">
+                  <div
+                    key={it.address}
+                    className="flex flex-col w-32 items-center gap-4"
+                  >
                     <span>{it.votes} votes</span>
                     <span className="text-xs text-gray-500 text-center">
                       {it.address}
