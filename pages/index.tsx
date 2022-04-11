@@ -1,6 +1,9 @@
 import Head from "next/head";
 import Image from "next/image";
+
 import insync from "public/insync.svg";
+import calendar from "public/calendar.svg";
+import work from "public/work.svg";
 
 export default function Landing() {
   return (
@@ -21,9 +24,15 @@ export default function Landing() {
         <h1 className="font-black text-black text-3xl sm:text-4xl text-center">
           Ritualize meeting up with friends and colleagues for workdays!
         </h1>
+        <div className="max-w-md mx-4">
+          <Image src={calendar} objectFit="contain" />
+        </div>
         <h2 className="font-bold text-xl text-primary text-center">
           Sync up and set up before sunday 8pm for your upcoming week.
         </h2>
+        <div className="max-w-md mx-4">
+          <Image src={work} objectFit="contain" />
+        </div>
         <p className="text-center mt-16">
           Decide on Budbudbud and let email flows sync up your calendars. Share
           office spaces, lunches & afterworks 🤘
