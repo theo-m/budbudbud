@@ -4,6 +4,9 @@ import { GetServerSideProps } from "next";
 import { getSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import superjson from "superjson";
+import nextMonday from "date-fns/nextMonday";
+import addDays from "date-fns/addDays";
+import format from "date-fns/format";
 import {
   ArrowRightIcon,
   CalendarIcon,
@@ -42,6 +45,7 @@ export default function Group({ payload }: { payload: string }) {
   const [showGroupNameInput, setShowGroupNameInput] = useState(false);
   const [showBoard, setShowBoard] = useState(true);
   const [showPeeps, setShowPeeps] = useState(false);
+  const [showDateModal, setShowDateModal] = useState<Date>();
 
   const router = useRouter();
   const groupId = Array.isArray(router.query.id)
@@ -101,6 +105,38 @@ export default function Group({ payload }: { payload: string }) {
               <UsersIcon height={24} />
             </button>
           </h1>
+
+          <Dialog
+            isOpen={!!showDateModal}
+            title={
+              showDateModal && `${format(showDateModal, "iii dd/MM")} meet`
+            }
+            onClose={() => setShowDateModal(undefined)}
+          >
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap gap-4 h-full">
+                {[
+                  { address: "118 av Gal Michel Bizot", votes: 4 },
+                  {
+                    address: "Restaurant 52, metro Strasbourg St Denis",
+                    votes: 1,
+                  },
+                ].map((it) => (
+                  <div className="flex flex-col w-32 items-center gap-4">
+                    <span>{it.votes} votes</span>
+                    <span className="text-xs text-gray-500 text-center">
+                      {it.address}
+                    </span>
+                  </div>
+                ))}
+                <div className="self-stretch flex items-center justify-center">
+                  <button className="rounded-full bg-primary text-white w-8 h-8 flex items-center justify-center">
+                    <PlusIcon height={24} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Dialog>
 
           <Dialog
             isOpen={showPeeps}
@@ -183,17 +219,27 @@ export default function Group({ payload }: { payload: string }) {
             <span>Next Week</span>
           </h2>
           <div className="w-full flex flex-wrap justify-evenly">
-            {["mon", "tue", "wed", "thu", "fri"].map((d) => (
-              <div
-                key={d}
-                className="h-12 w-12 rounded-full flex items-center justify-center bg-primary text-white relative"
-              >
-                {d}
-                <div className="bg-white text-primary text-xs absolute top-0 right-0 rounded-full border border-primary h-4 w-4 flex items-center justify-center">
-                  {/*{Math.floor(Math.random() * group.users.length)}*/}0
-                </div>
-              </div>
-            ))}
+            {["mon", "tue", "wed", "thu", "fri"].map((d, i) => {
+              const date = new Date();
+              const monday = nextMonday(date);
+              const day = addDays(monday, i);
+
+              return (
+                <button
+                  key={d}
+                  className="flex flex-col gap-1"
+                  onClick={() => setShowDateModal(day)}
+                >
+                  <div className="h-12 w-12 rounded-full flex items-center justify-center bg-primary text-white relative text-xs">
+                    {format(day, "dd/MM")}
+                    <div className="bg-white text-primary text-xs absolute top-0 right-0 rounded-full border border-primary h-4 w-4 flex items-center justify-center">
+                      {/*{Math.floor(Math.random() * group.users.length)}*/}0
+                    </div>
+                  </div>
+                  <span className="text-center text-sm">{d}</span>
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex items-center justify-between gap-2 group mt-8">
