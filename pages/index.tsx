@@ -14,7 +14,7 @@ export default function Landing() {
           name="description"
           content="Budbudbud helps you meet up with friends"
         />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.svg" />
       </Head>
 
       <div className="flex flex-col flex-grow gap-8 my-16 px-4 max-w-xl">
