@@ -22,7 +22,12 @@ export const groupByIdWithUsers = async (
       "request author is not a member of this group"
     );
 
-  return { ...group, users: groupUsers };
+  const messages = await prisma.groupMessage.findMany({
+    where: { groupId: id },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return { ...group, users: groupUsers, messages };
 };
 
 export type GroupWithUsers = Prisma.PromiseReturnType<
@@ -78,3 +83,6 @@ export const addUserToGroup = (groupId: string, userId: string) =>
 
 export const updateGroupName = (groupId: string, name: string) =>
   prisma.group.update({ where: { id: groupId }, data: { name } });
+
+export const newMessage = (groupId: string, text: string, authorId: string) =>
+  prisma.groupMessage.create({ data: { authorId, text, groupId } });

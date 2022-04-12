@@ -49,9 +49,10 @@ model User {
   accounts      Account[]
   sessions      Session[]
 
-  groups     Group[]
-  userGroups UserGroup[]
-  meetVotes  MeetVote[]
+  groups        Group[]
+  userGroups    UserGroup[]
+  meetVotes     MeetVote[]
+  groupMessages GroupMessage[]
 
   @@map("users")
 }
@@ -70,8 +71,9 @@ model Group {
   name  String?
   users User[]
 
-  userGroups UserGroup[]
-  meets      Meet[]
+  userGroups    UserGroup[]
+  meets         Meet[]
+  groupMessages GroupMessage[]
 
   @@map("groups")
 }
@@ -133,4 +135,18 @@ model MeetVote {
 
   @@unique([meetId, placeId, userId])
   @@map("meet_votes")
+}
+
+model GroupMessage {
+  id       String  @id @default(cuid())
+  text     String
+  authorId String?
+  groupId  String
+
+  createdAt DateTime @default(now())
+
+  author User?  @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  group  Group? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  @@map("group_message")
 }

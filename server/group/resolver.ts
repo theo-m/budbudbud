@@ -7,6 +7,7 @@ import {
   groupByIdWithUsers,
   groupByIdWithUsersWithAdminPermission,
   GroupWithUsers,
+  newMessage,
   updateGroupName,
 } from "@/server/group/db";
 import { ServerErrors } from "@/server/errors";
@@ -104,5 +105,13 @@ export default createRouter()
       await groupByIdWithUsersWithAdminPermission(id, me.email);
       await updateGroupName(id, name);
       return;
+    }),
+  })
+
+  .mutation("newMessage", {
+    input: z.object({ id: z.string().cuid(), text: z.string().nonempty() }),
+    resolve: withAuthentication(async ({ id, text }, me) => {
+      const group = await groupByIdWithUsers(id, me.email);
+      await newMessage(group.id, text, me.id);
     }),
   });

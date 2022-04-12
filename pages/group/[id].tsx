@@ -22,6 +22,9 @@ import {
 import PeepsModal from "../../client/Group/PeepsModal";
 import NameChangeModal from "../../client/Group/NameChangeModal";
 import MeetModal from "../../client/Group/MeetModal";
+import Board from "../../client/Group/Board";
+import { useForm } from "react-hook-form";
+import trpc from "../../client/trpc";
 
 export const getServerSideProps: GetServerSideProps = async ({
   req,
@@ -57,11 +60,18 @@ export default function GroupWrapper({ payload }: { payload: string }) {
 
 function Group() {
   const {
-    groupQuery: { data: group, isLoading },
+    id,
+    groupQuery: { data: group, isLoading, refetch },
     meetsQuery: { isLoading: loadingMeets },
   } = useGroupContext();
 
   const [showBoard, setShowBoard] = useState(true);
+
+  const { handleSubmit, register, reset } = useForm<{ message: string }>();
+  const { mutate: addMessage, isLoading: addingMessage } = trpc.useMutation(
+    "group/newMessage",
+    { onSuccess: () => refetch() }
+  );
 
   return (
     <div className="flex-grow w-full max-w-xl px-4">
@@ -93,7 +103,7 @@ function Group() {
               const monday = nextMonday(date);
               const day = addDays(monday, i);
 
-              return <MeetModal day={day} />;
+              return <MeetModal key={d} day={day} />;
             })}
           </div>
 
@@ -116,50 +126,25 @@ function Group() {
             className="flex flex-col gap-4 board overflow-hidden"
             data-show={showBoard}
           >
-            <div className="flex flex-col gap-2 overflow-y-auto">
-              {[
-                { author: "Théo", id: "wo-2924f2fn", msg: "Hey jeudi ok?" },
-                {
-                  author: "Sylvain M",
-                  id: "w2-2924f2fn",
-                  msg: "Lundi mercredi ok pour moi",
-                },
-                {
-                  author: "Théo",
-                  id: "wo-2924f2f3",
-                  msg: "mais pas mal de meetings dans l'aprem...",
-                },
-                {
-                  author: "Gus",
-                  id: "wo-2924f2fe",
-                  msg: "Yes chaud mercredi aussi - #cachiquet!",
-                },
-              ].map((a) => (
-                <div
-                  key={a.id}
-                  className="flex flex-col gap-1 w-fit max-w-[80%] bg-gray-100 rounded-lg p-2 relative"
-                >
-                  <span className="text-xs font-semibold text-primary">
-                    {a.author}
-                  </span>
-                  <p className="pb-1.5">{a.msg}</p>
-                  <span className="absolute right-1 bottom-0 text-xs text-gray-400">
-                    2d ago
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="flex mt-4 items-start gap-4 w-full">
+            <Board />
+            <form
+              className="flex mt-4 items-start gap-4 w-full"
+              onSubmit={handleSubmit((e) => {
+                addMessage({ id, text: e.message });
+                reset();
+              })}
+            >
               <textarea
                 className="p-4 rounded-lg border min-h-[40px] flex-grow placeholder:text-gray-300 focus:outline-primary"
                 placeholder="Type a message"
-                name="message"
+                {...register("message")}
                 rows={1}
               />
-              <span className="flex items-center justify-center w-6 h-6 bg-primary text-white rounded-full">
-                <ArrowRightIcon height={16} />
-              </span>
-            </div>
+
+              <button className="flex items-center justify-center w-6 h-6 bg-primary text-white rounded-full">
+                {addingMessage ? <Spinner /> : <ArrowRightIcon height={16} />}
+              </button>
+            </form>
           </div>
         </>
       )}

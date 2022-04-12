@@ -77,7 +77,7 @@ export default function MeetModal({ day }: { day: Date }) {
                 {(meet.meetVotes.length ?? 0) > 0 ? meet.meetVotes.length : "v"}
               </div>
               {meet.validated && (
-                <div className="bg-green-500 text-white text-xs absolute bottom-0 right-0 rounded-full border border-primary h-4 w-4 flex items-center justify-center">
+                <div className="bg-green-500 text-white text-xs absolute bottom-0 right-0 rounded-full h-4 w-4 flex items-center justify-center">
                   v
                 </div>
               )}
