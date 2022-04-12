@@ -6,22 +6,22 @@ import { useRouter } from "next/router";
 import superjson from "superjson";
 import nextMonday from "date-fns/nextMonday";
 import addDays from "date-fns/addDays";
-import format from "date-fns/format";
 import {
   ArrowRightIcon,
   CalendarIcon,
   ChatAltIcon,
-  CheckCircleIcon,
   ChevronUpIcon,
-  PlusIcon,
-  UsersIcon,
 } from "@heroicons/react/solid";
-
-import trpc from "../../client/trpc";
+import classNames from "classnames";
 import Spinner from "../../client/components/icons/Spinner";
 import { groupByIdWithUsers } from "@/server/group/db";
-import Dialog from "../../client/components/Dialog";
-import classNames from "classnames";
+import {
+  GroupContextProvider,
+  useGroupContext,
+} from "../../client/Group/GroupContext";
+import PeepsModal from "../../client/Group/PeepsModal";
+import NameChangeModal from "../../client/Group/NameChangeModal";
+import MeetModal from "../../client/Group/MeetModal";
 
 export const getServerSideProps: GetServerSideProps = async ({
   req,
@@ -40,208 +40,60 @@ export const getServerSideProps: GetServerSideProps = async ({
   return { props: { payload: superjson.stringify(group) } };
 };
 
-export default function Group({ payload }: { payload: string }) {
-  const [showNewUserInput, setShowNewUserInput] = useState(false);
-  const [showGroupNameInput, setShowGroupNameInput] = useState(false);
-  const [showBoard, setShowBoard] = useState(true);
-  const [showPeeps, setShowPeeps] = useState(false);
-  const [showDateModal, setShowDateModal] = useState<Date>();
-
+export default function GroupWrapper({ payload }: { payload: string }) {
   const router = useRouter();
   const groupId = Array.isArray(router.query.id)
     ? router.query.id[0]
     : router.query.id ?? "";
+
+  return (
+    groupId !== "" && (
+      <GroupContextProvider id={groupId} payload={payload}>
+        <Group />
+      </GroupContextProvider>
+    )
+  );
+}
+
+function Group() {
   const {
-    data: group,
-    isLoading,
-    error,
-    refetch,
-  } = trpc.useQuery(["group/byId", groupId], {
-    enabled: groupId !== "",
-    initialData: () => superjson.parse(payload),
-  });
+    groupQuery: { data: group, isLoading },
+    meetsQuery: { isLoading: loadingMeets },
+  } = useGroupContext();
 
-  const { mutate: addUser, isLoading: addingUser } = trpc.useMutation(
-    "group/addUser",
-    {
-      onSuccess: () => {
-        refetch();
-        setShowNewUserInput(false);
-      },
-    }
-  );
-
-  const { mutate: updateName, isLoading: updatingName } = trpc.useMutation(
-    "group/updateName",
-    {
-      onSuccess: () => {
-        refetch();
-        setShowGroupNameInput(false);
-      },
-    }
-  );
+  const [showBoard, setShowBoard] = useState(true);
 
   return (
     <div className="flex-grow w-full max-w-xl px-4">
       <Head>
         <title>{group?.name ?? "New group"}</title>
+        <link rel="icon" href="/favicon.svg" />
       </Head>
       {isLoading && <Spinner />}
-      {error && <div>{error.message}</div>}
       {group && (
         <>
           <h1 className="font-bold group w-full text-black text-xl my-8 flex items-center gap-4">
             {group.name ?? "New group"}
-            <button
-              className="group-hover:opacity-100 transition opacity-0 rounded px-1 text-sm text-primary border hover:bg-primary/5 focus:outline-primary"
-              onClick={() => setShowGroupNameInput(true)}
-            >
-              edit
-            </button>
-            <button
-              className="ml-auto hover:opacity-80"
-              onClick={() => setShowPeeps(true)}
-            >
-              <UsersIcon height={24} />
-            </button>
+            <NameChangeModal />
+            <PeepsModal />
           </h1>
-
-          <Dialog
-            isOpen={!!showDateModal}
-            title={
-              showDateModal && `${format(showDateModal, "iii dd/MM")} meet`
-            }
-            onClose={() => setShowDateModal(undefined)}
-          >
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-wrap gap-4 h-full">
-                {[
-                  { address: "118 av Gal Michel Bizot", votes: 4 },
-                  {
-                    address: "Restaurant 52, metro Strasbourg St Denis",
-                    votes: 1,
-                  },
-                ].map((it) => (
-                  <div
-                    key={it.address}
-                    className="flex flex-col w-32 items-center gap-4"
-                  >
-                    <span>{it.votes} votes</span>
-                    <span className="text-xs text-gray-500 text-center">
-                      {it.address}
-                    </span>
-                  </div>
-                ))}
-                <div className="self-stretch flex items-center justify-center">
-                  <button className="rounded-full bg-primary text-white w-8 h-8 flex items-center justify-center">
-                    <PlusIcon height={24} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </Dialog>
-
-          <Dialog
-            isOpen={showPeeps}
-            title="Group members"
-            onClose={() => setShowPeeps(false)}
-          >
-            <div className="flex flex-col gap-4 w-full max-w-md mx-auto">
-              <div className="flex items-center gap-2 mb-4 ">
-                <input
-                  type="email"
-                  name="email"
-                  autoFocus
-                  className="rounded px-2 flex-grow py-1 border placeholder:text-gray-300 focus:outline-primary"
-                  placeholder="email@example.com"
-                  onKeyDown={(e) =>
-                    e.key === "Enter" &&
-                    !!groupId &&
-                    addUser({ groupId, userEmail: e.currentTarget.value })
-                  }
-                  disabled={!groupId}
-                />
-                <button
-                  className="hover:bg-opacity-80 transition focus:rotate-90 transition h-6 w-6 bg-gray-500 text-white rounded-full flex items-center justify-center"
-                  onClick={() => setShowNewUserInput(!showNewUserInput)}
-                >
-                  {addingUser ? <Spinner /> : <PlusIcon height={20} />}
-                </button>
-              </div>
-              <div className="flex flex-col divide-y max-h-[420px]  overflow-y-auto pr-4">
-                {group.users.length > 0
-                  ? group.users.map((u) => (
-                      <div
-                        key={u.userId}
-                        className="flex items-center gap-4 group py-4"
-                      >
-                        <span className="whitespace-nowrap text-gray-500 font-medium">
-                          {u.user.name}
-                        </span>
-                        <span className="text-xs text-gray-300 truncate">
-                          {u.user.email}
-                        </span>
-                        {u.admin ? (
-                          <span className="ml-auto text-xs rounded border text-gray-300 p-1">
-                            admin
-                          </span>
-                        ) : (
-                          <button className="group-hover:opacity-100 opacity-0 transition ml-auto whitespace-nowrap rounded px-1 text-sm text-primary border hover:bg-primary/5 focus:outline-primary">
-                            make admin
-                          </button>
-                        )}
-                      </div>
-                    ))
-                  : "No users yet here"}
-              </div>
-            </div>
-          </Dialog>
-
-          <Dialog
-            isOpen={showGroupNameInput}
-            title="Group name update"
-            onClose={() => setShowGroupNameInput(false)}
-          >
-            <div className="flex items-center gap-4 w-full">
-              <input
-                type="text"
-                defaultValue={group.name ?? ""}
-                className="rounded px-2 w-full py-1 border placeholder:text-gray-300 focus:outline-primary"
-                autoFocus
-                onKeyDown={(e) =>
-                  e.key === "Enter" &&
-                  updateName({ id: group.id, name: e.currentTarget.value })
-                }
-              />
-              {updatingName ? <Spinner /> : <CheckCircleIcon height={24} />}
-            </div>
-          </Dialog>
 
           <h2 className="text-gray-500 font-bold text-xl my-8 flex items-center gap-4">
             <CalendarIcon height={24} />
             <span>Next Week</span>
           </h2>
-          <div className="w-full flex flex-wrap justify-evenly">
+          <div className="w-full flex flex-wrap justify-evenly relative">
+            {loadingMeets && (
+              <div className="absolute top-0 right-0 h-4 w-4">
+                <Spinner />
+              </div>
+            )}
             {["mon", "tue", "wed", "thu", "fri"].map((d, i) => {
               const date = new Date();
               const monday = nextMonday(date);
               const day = addDays(monday, i);
 
-              return (
-                <button
-                  key={d}
-                  className="flex flex-col gap-1"
-                  onClick={() => setShowDateModal(day)}
-                >
-                  <div className="h-12 w-12 rounded-full flex items-center justify-center bg-primary text-white relative text-xs">
-                    {format(day, "dd/MM")}
-                    <div className="bg-white text-primary text-xs absolute top-0 right-0 rounded-full border border-primary h-4 w-4 flex items-center justify-center">
-                      {/*{Math.floor(Math.random() * group.users.length)}*/}0
-                    </div>
-                  </div>
-                  <span className="text-center text-sm">{d}</span>
-                </button>
-              );
+              return <MeetModal day={day} />;
             })}
           </div>
 

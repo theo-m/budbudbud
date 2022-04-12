@@ -8,6 +8,7 @@ import type { AppRouter } from "./api/trpc/[...trpc]";
 import Layout from "../client/components/Layout";
 import { ReactElement, ReactNode } from "react";
 import { NextPage } from "next";
+import { UserContextProvider } from "../client/UserContext";
 
 export type NextPageWithLayout = NextPage & {
   getLayout?: (page: ReactElement) => ReactNode;
@@ -25,7 +26,9 @@ function MyApp({
 
   return (
     <SessionProvider session={session} refetchInterval={60}>
-      {getLayout(<Component {...pageProps} />)}
+      <UserContextProvider>
+        {getLayout(<Component {...pageProps} />)}
+      </UserContextProvider>
     </SessionProvider>
   );
 }

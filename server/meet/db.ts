@@ -3,7 +3,12 @@ import { groupByIdWithUsers } from "@/server/group/db";
 
 export const createMeet = (groupId: string, day: Date) =>
   prisma.meet.create({
-    data: { groupId, day, validated: false, placeId: null },
+    data: {
+      groupId,
+      day: new Date(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate()),
+      validated: false,
+      placeId: null,
+    },
   });
 
 export const meetById = async (id: string, requestAuthorEmail: string) => {
@@ -11,21 +16,18 @@ export const meetById = async (id: string, requestAuthorEmail: string) => {
     where: { id },
     rejectOnNotFound: true,
   });
-  await groupByIdWithUsers(meet.groupId, requestAuthorEmail);
-  return meet;
+  const group = await groupByIdWithUsers(meet.groupId, requestAuthorEmail);
+
+  return { ...meet, group };
 };
 
-export const voteOnMeet = async (
-  meetId: string,
-  placeId: string,
-  userId: string
-) => prisma.meetVote.create({ data: { userId, meetId, placeId } });
+export const voteOnMeet = (meetId: string, placeId: string, userId: string) =>
+  prisma.meetVote.create({ data: { userId, meetId, placeId } });
 
-export const deleteVote = async (
-  meetId: string,
-  placeId: string,
-  userId: string
-) =>
+export const deleteVote = (meetId: string, placeId: string, userId: string) =>
   prisma.meetVote.delete({
     where: { meetId_placeId_userId: { userId, meetId, placeId } },
   });
+
+export const markValidated = (id: string) =>
+  prisma.meet.update({ where: { id }, data: { validated: true } });

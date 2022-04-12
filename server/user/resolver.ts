@@ -1,7 +1,7 @@
-import { z } from "zod";
+import { createRouter, withAuthentication } from "@/server/router";
 
-import { createRouter } from "@/server/router";
-
-export default createRouter()
-  .query("byId", { resolve: () => {} })
-  .mutation("updateName", { input: z.string(), resolve: () => {} });
+export default createRouter().query("me", {
+  resolve: withAuthentication((_, me) => {
+    return me;
+  }),
+});

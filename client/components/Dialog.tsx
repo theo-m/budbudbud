@@ -27,7 +27,7 @@ export default function Dialog({
       </span>
       <div className="bg-white shadow-xl rounded-xl p-4 w-[calc(100vw-32px)] max-w-xl z-10 flex flex-col gap-4">
         <HDialog.Title>
-          <h2 className="font-medium">{title}</h2>
+          <h2 className="font-medium mb-4">{title}</h2>
         </HDialog.Title>
         <div className="flex items-center gap-4 w-full">{children}</div>
       </div>

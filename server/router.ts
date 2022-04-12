@@ -1,6 +1,6 @@
 import * as trpcNext from "@trpc/server/adapters/next";
 import * as trpc from "@trpc/server";
-import { inferAsyncReturnType } from "@trpc/server";
+import { inferAsyncReturnType, TRPCError } from "@trpc/server";
 import { ProcedureResolver } from "@trpc/server/src/internals/procedure";
 import { getSession } from "next-auth/react";
 
@@ -9,11 +9,11 @@ import { prisma } from "@/server/clients";
 import { User } from "@prisma/client";
 
 export async function createContext(opts?: trpcNext.CreateNextContextOptions) {
-  if (!opts) throw new Error("");
-  // throw new TRPCError({
-  //   code: "INTERNAL_SERVER_ERROR",
-  //   message: "null request",
-  // });
+  if (!opts)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "null request",
+    });
 
   const session = await getSession({ req: opts.req });
   const user = session?.user;

@@ -29,6 +29,11 @@ export type GroupWithUsers = Prisma.PromiseReturnType<
   typeof groupByIdWithUsers
 >;
 
+export const checkUserEmailIsGroupAdmin = (
+  group: GroupWithUsers,
+  email: string
+) => !!group.users.find((u) => u.user.email === email && u.admin);
+
 export const groupByIdWithUsersWithAdminPermission = async (
   id: string,
   requestAuthorEmail: string
@@ -38,9 +43,7 @@ export const groupByIdWithUsersWithAdminPermission = async (
     requestAuthorEmail
   );
 
-  if (
-    !group.users.find((u) => u.user.email === requestAuthorEmail && u.admin)
-  ) {
+  if (!checkUserEmailIsGroupAdmin(group, requestAuthorEmail)) {
     throw ServerErrors.PermissionError("request author is not group admin");
   } else {
     return group;
@@ -58,7 +61,7 @@ export const groupByIdWithMeets = async (
 
   const meets = await prisma.meet.findMany({
     where: { groupId: id },
-    include: { meetVotes: true },
+    include: { meetVotes: { include: { place: true, user: true } } },
     orderBy: { day: "desc" },
     take: 5,
   });
