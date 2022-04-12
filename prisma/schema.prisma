@@ -43,15 +43,16 @@ model Session {
 model User {
   id            String    @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String    @unique
   emailVerified DateTime?
   image         String?
   accounts      Account[]
   sessions      Session[]
 
-  groups Group[]
+  groups     Group[]
+  userGroups UserGroup[]
+  meetVotes  MeetVote[]
 
-  UserGroup UserGroup[]
   @@map("users")
 }
 
@@ -70,7 +71,7 @@ model Group {
   users User[]
 
   userGroups UserGroup[]
-  meets Meet[]
+  meets      Meet[]
 
   @@map("groups")
 }
@@ -81,8 +82,8 @@ model UserGroup {
   groupId String
   admin   Boolean
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  group   Group   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@unique([userId, groupId])
   @@map("user_groups")
@@ -98,6 +99,8 @@ model Meet {
   group Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   place Place? @relation(fields: [placeId], references: [id], onDelete: SetNull)
 
+  meetVotes MeetVote[]
+
   @@unique([groupId, day])
   @@map("meets")
 }
@@ -106,8 +109,28 @@ model Place {
   id      String  @id @default(cuid())
   name    String?
   address String
+  seats   Int?
 
-  meets    Meet[]
+  meets     Meet[]
+  meetVotes MeetVote[]
 
   @@map("places")
+}
+
+model MeetVote {
+  id      String @id @default(cuid())
+  meetId  String
+  placeId String
+  userId  String
+
+  createdAt DateTime @default(now())
+
+
+  meet  Meet  @relation(fields: [meetId], references: [id], onDelete: Cascade)
+  place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+
+  @@unique([meetId, placeId, userId])
+  @@map("meet_votes")
 }

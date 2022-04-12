@@ -29,11 +29,11 @@ export const getServerSideProps: GetServerSideProps = async ({
 }) => {
   const res = await getSession({ req });
 
-  if (!res?.user)
+  if (!res?.user || !res.user.email)
     return { redirect: { destination: "/signin", permanent: false } };
 
   const groupId = Array.isArray(query.id) ? query.id[0] : query.id ?? "";
-  const group = await groupByIdWithUsers(groupId);
+  const group = await groupByIdWithUsers(groupId, res.user.email);
   if (!group.users.find((u) => u.user.email === res.user?.email))
     return { redirect: { destination: "/signin", permanent: false } };
 

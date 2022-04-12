@@ -5,6 +5,7 @@ import { prisma } from "@/server/clients";
 import {
   addUserToGroup,
   groupByIdWithUsers,
+  groupByIdWithUsersWithAdminPermission,
   GroupWithUsers,
   updateGroupName,
 } from "@/server/group/db";
@@ -15,7 +16,7 @@ export default createRouter()
   .query("byId", {
     input: z.string().cuid(),
     resolve: withAuthentication(async (id, me) => {
-      const group: GroupWithUsers = await groupByIdWithUsers(id);
+      const group: GroupWithUsers = await groupByIdWithUsers(id, me.email);
       if (!group.users.find(({ user }) => user.id === me.id))
         throw ServerErrors.PermissionError("not part of this group");
 
@@ -51,11 +52,12 @@ export default createRouter()
       userEmail: z.string().email(),
     }),
     resolve: withAuthentication(async ({ groupId, userEmail }, me) => {
-      const group = await groupByIdWithUsers(groupId);
-      const rel = group.users.find((u) => u.user.email === me.email);
-      if (!rel || !rel.admin)
-        throw ServerErrors.PermissionError("need to be admin of the group");
+      const group = await groupByIdWithUsersWithAdminPermission(
+        groupId,
+        me.email
+      );
 
+      // early return when user already in
       if (group.users.find((u) => u.user.email === userEmail)) return;
 
       const existingUser = await getUserByEmailOrNull(userEmail);
@@ -64,8 +66,17 @@ export default createRouter()
         return;
       }
       // TODO: send invite
+
+      // here's how to use verification tokens: e.g. to create one and verify it on our own route
+      // https://github.com/nextauthjs/next-auth/blob/7a4bf038b119ae65ffbff67645e65d6ab9c4f847/packages/next-auth/src/core/routes/callback.ts#L203-L212
+      // here's where it's called:
+      // https://github.com/nextauthjs/next-auth/blob/7a4bf038b119ae65ffbff67645e65d6ab9c4f847/packages/next-auth/src/core/index.ts#L120-L133
+
+      // using the adapter is probly the right call:
       // const newUser = await PrismaAdapter(prisma).createUser({ email: "" });
       // await PrismaAdapter(prisma).createVerificationToken("bobom");
+      // more on the adapter's logic here:
+      // https://github.com/nextauthjs/adapters/blob/main/packages/prisma/src/index.ts#L35-L47
     }),
   })
 
@@ -90,10 +101,7 @@ export default createRouter()
   .mutation("updateName", {
     input: z.object({ id: z.string().cuid(), name: z.string().nonempty() }),
     resolve: withAuthentication(async ({ id, name }, me) => {
-      const group = await groupByIdWithUsers(id);
-      const rel = group.users.find((u) => u.user.email === me.email);
-      if (!rel || !rel.admin)
-        throw ServerErrors.PermissionError("need to be admin of the group");
+      await groupByIdWithUsersWithAdminPermission(id, me.email);
       await updateGroupName(id, name);
       return;
     }),
