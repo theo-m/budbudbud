@@ -1,12 +1,47 @@
+import { useState } from "react";
+import {
+  MinusCircleIcon,
+  UserAddIcon,
+  UsersIcon,
+} from "@heroicons/react/solid";
+
 import Dialog from "../components/Dialog";
 import Spinner from "../components/icons/Spinner";
-import { PlusIcon, UsersIcon } from "@heroicons/react/solid";
 import { useGroupContext } from "./GroupContext";
 import trpc from "../trpc";
-import { useState } from "react";
+import { GroupWithUsers } from "@/server/group/db";
+import { useForm } from "react-hook-form";
+
+const UserControl = ({ user }: { user: GroupWithUsers["users"][number] }) => {
+  const {
+    id,
+    groupQuery: { refetch },
+  } = useGroupContext();
+  const { mutate: removeUser, isLoading: removingUser } = trpc.useMutation(
+    "group/removeUser",
+    { onSuccess: () => refetch() }
+  );
+
+  return (
+    <div className="ml-auto bg-white transition opacity-0 group-hover:opacity-100 absolute right-0 top-1/2 -translate-y-1/2 flex items-center rounded-xl overflow-hidden border outline outline-2  outline-white divide-x">
+      <button className="py-3 px-1 hover:bg-gray-100 text-xs">
+        {user.admin ? "- admin rights" : "Make admin"}
+      </button>
+      <button
+        className="p-2 hover:bg-gray-100"
+        onClick={() => removeUser({ userId: user.id, groupId: id })}
+      >
+        {removingUser ? (
+          <Spinner />
+        ) : (
+          <MinusCircleIcon className="text-red-500" height={24} />
+        )}
+      </button>
+    </div>
+  );
+};
 
 export default function PeepsModal() {
-  const [showNewUserInput, setShowNewUserInput] = useState(false);
   const [showPeeps, setShowPeeps] = useState(false);
 
   const {
@@ -16,13 +51,13 @@ export default function PeepsModal() {
 
   const { mutate: addUser, isLoading: addingUser } = trpc.useMutation(
     "group/addUser",
-    {
-      onSuccess: () => {
-        refetch();
-        setShowNewUserInput(false);
-      },
-    }
+    { onSuccess: () => refetch() }
   );
+
+  const { register, handleSubmit, reset } = useForm<{
+    email: string;
+    name: string;
+  }>();
 
   return (
     <>
@@ -39,47 +74,49 @@ export default function PeepsModal() {
         onClose={() => setShowPeeps(false)}
       >
         <div className="flex flex-col gap-4 w-full max-w-md mx-auto">
-          <div className="flex items-center gap-2 mb-4 ">
+          <form
+            className="flex items-center gap-2 sm:gap-4 mb-4"
+            onSubmit={handleSubmit(({ name, email }) => {
+              addUser({ userEmail: email, groupId: id, name });
+              reset();
+            })}
+          >
             <input
-              type="email"
-              name="email"
+              {...register("name")}
+              type="text"
               autoFocus
-              className="rounded px-2 flex-grow py-1 border placeholder:text-gray-300 focus:outline-primary"
-              placeholder="email@example.com"
-              onKeyDown={(e) =>
-                e.key === "Enter" &&
-                addUser({ groupId: id, userEmail: e.currentTarget.value })
-              }
+              className="rounded px-2 min-w-0 w-1/3 py-1 border placeholder:text-gray-300 focus:outline-primary"
+              placeholder="Type a name"
             />
-            <button
-              className="hover:bg-opacity-80 transition focus:rotate-90 transition h-6 w-6 bg-gray-500 text-white rounded-full flex items-center justify-center"
-              onClick={() => setShowNewUserInput(!showNewUserInput)}
-            >
-              {addingUser ? <Spinner /> : <PlusIcon height={20} />}
+            <input
+              {...register("email")}
+              type="email"
+              autoFocus
+              className="rounded px-2 flex-grow min-w-0 py-1 border placeholder:text-gray-300 focus:outline-primary"
+              placeholder="email@example.com"
+            />
+            <button className="hover:bg-opacity-80 min-w-[24px] transition focus:rotate-90 transition h-6 w-6 bg-primary text-white rounded-full flex items-center justify-center">
+              {addingUser ? (
+                <Spinner />
+              ) : (
+                <UserAddIcon className="" height={18} width={18} />
+              )}
             </button>
-          </div>
-          <div className="flex flex-col divide-y max-h-[420px]  overflow-y-auto pr-4">
+          </form>
+          <div className="flex flex-col divide-y max-h-[420px] overflow-y-auto pr-4">
             {(group?.users.length ?? 0) > 0
               ? group?.users.map((u) => (
                   <div
                     key={u.userId}
-                    className="flex items-center gap-4 group py-4"
+                    className="relative flex items-center gap-4 group py-4"
                   >
-                    <span className="whitespace-nowrap text-gray-500 font-medium">
-                      {u.user.name}
+                    <span className="whitespace-nowrap text-gray-500 font-normal truncate">
+                      {u.name}
                     </span>
                     <span className="text-xs text-gray-300 truncate">
                       {u.user.email}
                     </span>
-                    {u.admin ? (
-                      <span className="ml-auto text-xs rounded border text-gray-300 p-1">
-                        admin
-                      </span>
-                    ) : (
-                      <button className="group-hover:opacity-100 opacity-0 transition ml-auto whitespace-nowrap rounded px-1 text-sm text-primary border hover:bg-primary/5 focus:outline-primary">
-                        make admin
-                      </button>
-                    )}
+                    <UserControl user={u} />
                   </div>
                 ))
               : "No users yet here"}

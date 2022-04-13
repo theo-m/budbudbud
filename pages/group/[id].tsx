@@ -25,6 +25,7 @@ import MeetModal from "../../client/Group/MeetModal";
 import Board from "../../client/Group/Board";
 import { useForm } from "react-hook-form";
 import trpc from "../../client/trpc";
+import { getQueryParam } from "../../shared/query";
 
 export const getServerSideProps: GetServerSideProps = async ({
   req,
@@ -35,7 +36,9 @@ export const getServerSideProps: GetServerSideProps = async ({
   if (!res?.user || !res.user.email)
     return { redirect: { destination: "/signin", permanent: false } };
 
-  const groupId = Array.isArray(query.id) ? query.id[0] : query.id ?? "";
+  const groupId = getQueryParam(query.id);
+  if (!groupId) return { redirect: { destination: "/", permanent: true } };
+
   const group = await groupByIdWithUsers(groupId, res.user.email);
   if (!group.users.find((u) => u.user.email === res.user?.email))
     return { redirect: { destination: "/signin", permanent: false } };
@@ -45,9 +48,7 @@ export const getServerSideProps: GetServerSideProps = async ({
 
 export default function GroupWrapper({ payload }: { payload: string }) {
   const router = useRouter();
-  const groupId = Array.isArray(router.query.id)
-    ? router.query.id[0]
-    : router.query.id ?? "";
+  const groupId = getQueryParam(router.query.id) ?? "";
 
   return (
     groupId !== "" && (

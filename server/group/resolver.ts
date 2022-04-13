@@ -1,17 +1,33 @@
 import { z } from "zod";
 
 import { createRouter, withAuthentication } from "@/server/router";
-import { prisma } from "@/server/clients";
+import { mailClient, prisma } from "@/server/clients";
 import {
   addUserToGroup,
   groupByIdWithUsers,
   groupByIdWithUsersWithAdminPermission,
   GroupWithUsers,
   newMessage,
+  removeUserFromGroup,
   updateGroupName,
 } from "@/server/group/db";
 import { ServerErrors } from "@/server/errors";
-import { getUserByEmailOrNull } from "@/server/user/db";
+import { getUserByEmailOrNull, markUserInvitedBy } from "@/server/user/db";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import addDays from "date-fns/addDays";
+import * as crypto from "crypto";
+
+// not exported by nextauth, borrowed from
+// https://github.com/nextauthjs/next-auth/blob/7a4bf038b119ae65ffbff67645e65d6ab9c4f847/packages/next-auth/src/core/routes/callback.ts#L203-L212
+function hashToken(token: string) {
+  return (
+    crypto
+      .createHash("sha256")
+      // Prefer provider specific secret, but use default secret if none specified
+      .update(`${token}${process.env.AUTH_SECRET}`)
+      .digest("hex")
+  );
+}
 
 export default createRouter()
   .query("byId", {
@@ -47,12 +63,21 @@ export default createRouter()
     }),
   })
 
+  .mutation("removeUser", {
+    input: z.object({ groupId: z.string().cuid(), userId: z.string().cuid() }),
+    resolve: withAuthentication(async ({ groupId, userId }, me) => {
+      await groupByIdWithUsersWithAdminPermission(groupId, me.email);
+      await removeUserFromGroup(groupId, userId);
+    }),
+  })
+
   .mutation("addUser", {
     input: z.object({
       groupId: z.string().cuid(),
+      name: z.string().nonempty(),
       userEmail: z.string().email(),
     }),
-    resolve: withAuthentication(async ({ groupId, userEmail }, me) => {
+    resolve: withAuthentication(async ({ groupId, userEmail, name }, me) => {
       const group = await groupByIdWithUsersWithAdminPermission(
         groupId,
         me.email
@@ -63,36 +88,70 @@ export default createRouter()
 
       const existingUser = await getUserByEmailOrNull(userEmail);
       if (existingUser) {
-        await addUserToGroup(groupId, existingUser.id);
+        await addUserToGroup(groupId, existingUser.id, name);
         return;
       }
-      // TODO: send invite
 
-      // here's how to use verification tokens: e.g. to create one and verify it on our own route
-      // https://github.com/nextauthjs/next-auth/blob/7a4bf038b119ae65ffbff67645e65d6ab9c4f847/packages/next-auth/src/core/routes/callback.ts#L203-L212
-      // here's where it's called:
-      // https://github.com/nextauthjs/next-auth/blob/7a4bf038b119ae65ffbff67645e65d6ab9c4f847/packages/next-auth/src/core/index.ts#L120-L133
+      const newUser = await PrismaAdapter(prisma).createUser?.({
+        email: userEmail,
+        emailVerified: null,
+      });
+      await markUserInvitedBy(newUser.id, me.id, new Date());
+      await addUserToGroup(groupId, newUser.id, name);
 
-      // using the adapter is probly the right call:
-      // const newUser = await PrismaAdapter(prisma).createUser({ email: "" });
-      // await PrismaAdapter(prisma).createVerificationToken("bobom");
-      // more on the adapter's logic here:
-      // https://github.com/nextauthjs/adapters/blob/main/packages/prisma/src/index.ts#L35-L47
+      const token = crypto.randomBytes(32).toString("hex");
+      const secret = await PrismaAdapter(prisma).createVerificationToken?.({
+        token: hashToken(token),
+        expires: addDays(new Date(), 1),
+        identifier: userEmail,
+      });
+      if (!secret)
+        throw ServerErrors.GenericInternalError(
+          "could not create verification token"
+        );
+
+      const base =
+        process.env.NODE_ENV === "production"
+          ? process.env.VERCEL_URL
+          : "http://localhost:3000";
+
+      const cbUrl = `${base}/signin`;
+      const url = `${base}/api/auth/callback/email?callbackUrl=${cbUrl}&token=${token}&email=${userEmail}`;
+
+      await mailClient.sendEmail({
+        To: userEmail,
+        From: "ops@scorrilo.com",
+        TextBody: `${
+          me.name ?? me.email
+        } has invited you to join their budbudbud group, see what's happening there by clicking here:\n${url}`,
+        HtmlBody: `
+        <div>Hey there great news you've been invited by ${
+          me.name ?? me.email
+        } to join their <span style="color: hsl(287,79%,52%)">budbudbud</span></div>
+        <div>Simply <a href="${url}">click here</a> to see what's happening there</div>
+        `,
+        Subject: "You've been invited to budbudbud",
+      });
     }),
   })
 
   .mutation("create", {
     input: z.object({
       name: z.string().nonempty(),
-      users: z.array(z.string().cuid()),
+      users: z.array(
+        z.object({ id: z.string().cuid(), name: z.string().nonempty() })
+      ),
     }),
     resolve: withAuthentication(async ({ name, users }, me) => {
       const { id } = await prisma.group.create({ data: { name } });
       await prisma.userGroup.createMany({
-        data: [...new Set([...users, me.id])].map((uid) => ({
+        data: [
+          ...new Set([...users, { id: me.id, name: me.name ?? me.email }]),
+        ].map((u) => ({
           groupId: id,
-          userId: uid,
-          admin: uid === me.id,
+          userId: u.id,
+          name: u.name,
+          admin: u.id === me.id,
         })),
       });
       return id;

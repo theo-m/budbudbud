@@ -7,4 +7,8 @@ export class ServerErrors {
   });
   static PermissionError = (m: string) =>
     new TRPCError({ code: "FORBIDDEN", message: m });
+  static GenericInternalError = (m: string) =>
+    new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: m });
+  static GenericBadRequestError = (m?: string) =>
+    new TRPCError({ code: "BAD_REQUEST", message: m ?? "Bad request" });
 }

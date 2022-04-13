@@ -14,8 +14,7 @@ const Message = ({
   const {
     groupQuery: { data: group },
   } = useGroupContext();
-  const authorName = group?.users.find((it) => it.userId === authorId)?.user
-    .name;
+  const authorName = group?.users.find((it) => it.userId === authorId)?.name;
   const isAuthor = userQuery.data?.id === authorId;
 
   return (

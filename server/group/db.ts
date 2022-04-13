@@ -78,8 +78,11 @@ export type GroupWithMeets = Prisma.PromiseReturnType<
   typeof groupByIdWithMeets
 >;
 
-export const addUserToGroup = (groupId: string, userId: string) =>
-  prisma.userGroup.create({ data: { groupId, userId, admin: false } });
+export const addUserToGroup = (groupId: string, userId: string, name: string) =>
+  prisma.userGroup.create({ data: { groupId, userId, admin: false, name } });
+
+export const removeUserFromGroup = (groupId: string, userId: string) =>
+  prisma.userGroup.delete({ where: { userId_groupId: { groupId, userId } } });
 
 export const updateGroupName = (groupId: string, name: string) =>
   prisma.group.update({ where: { id: groupId }, data: { name } });

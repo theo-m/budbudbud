@@ -46,9 +46,13 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   image         String?
+  invitedById   String?
+  invitedAt     DateTime?
+
+  invitedBy     User?          @relation("invite", fields: [invitedById], references: [id], onDelete: SetNull)
+  invited       User[]         @relation("invite")
   accounts      Account[]
   sessions      Session[]
-
   groups        Group[]
   userGroups    UserGroup[]
   meetVotes     MeetVote[]
@@ -83,6 +87,7 @@ model UserGroup {
   userId  String
   groupId String
   admin   Boolean
+  name    String
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)

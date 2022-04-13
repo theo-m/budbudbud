@@ -55,12 +55,13 @@ async function users() {
       });
       await prisma.userGroup.createMany({
         data: [
-          { groupId: group.id, userId: me.id, admin: true },
+          { groupId: group.id, userId: me.id, name: "Richard", admin: true },
           ...friends
             .filter(() => Math.random() > 0.2)
             .map((f) => ({
               groupId: group.id,
               userId: f.id,
+              name: faker.name.findName(),
               admin: Math.random() > 0.6,
             })),
         ],
