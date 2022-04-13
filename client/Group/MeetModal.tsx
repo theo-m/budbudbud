@@ -102,7 +102,11 @@ export default function MeetModal({ day }: { day: Date }) {
                 className="ml-auto rounded border border-primary/60 hover:bg-primary/90 bg-primary text-white p-1 font-medium w-fit flex items-center gap-2"
                 onClick={() => createMeet({ groupId: id, day: showDateModal! })}
               >
-                {creatingMeet ? <Spinner /> : <PlusCircleIcon height={24} />}
+                {creatingMeet ? (
+                  <Spinner className="text-white" />
+                ) : (
+                  <PlusCircleIcon height={24} />
+                )}
                 <span>I'm up 🤘</span>
               </button>
             </>
