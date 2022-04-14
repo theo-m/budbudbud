@@ -97,7 +97,7 @@ export default function PeepsModal() {
             />
             <button className="hover:bg-opacity-80 min-w-[24px] transition focus:rotate-90 transition h-6 w-6 bg-primary text-white rounded-full flex items-center justify-center">
               {addingUser ? (
-                <Spinner />
+                <Spinner className="text-white" />
               ) : (
                 <UserAddIcon className="" height={18} width={18} />
               )}

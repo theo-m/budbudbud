@@ -1,0 +1,38 @@
+<mjml>
+    <mj-body>
+        <mj-section background-color="#fff" padding="10px">
+            <mj-column background-color="#fff" border-radius="16px" padding="8px">
+
+                <mj-text font-size="32px" font-weight=600 color="#BB24E5" font-family="helvetica">Welcome to Budbudbud!
+
+                </mj-text>
+                <mj-divider border-color="#BB24E5"/>
+
+                <mj-text font-size="18px">Hey {{name}}, you've been invited by {{inviter}} to join a cool group, <span
+                        style="font-style:italic;color:#BB24E5;">{{group}}
+                </span> with <span style="font-weight: 500">{{groupDesc}}</span> :)
+                </mj-text>
+
+
+                <mj-divider border-color="white"/>
+
+                <mj-button background-color="#BB24E5" font-size="20px" border-radius="16px" border="2px solid #CF48F4"
+                           href="{{url}}">Join here!
+                </mj-button>
+
+                <mj-text font-size="16px" color="#aaa" padding-top="32px">
+                    Budbudbud is a dead-simple tool to schedule remote work days with
+                    friends and colleagues: simply pick days and places in the coming
+                    week and decide where to spend time together.
+                </mj-text>
+                <mj-text font-size="16px" color="#aaa">
+                    It is actively being developped on <a style="text-decoration: underline; color: #BB24E5;"
+                                                          href="https://github.com/theo-m/budbudbud">github
+                </a> by your friend Théo Matussière.
+                </mj-text>
+
+
+            </mj-column>
+        </mj-section>
+    </mj-body>
+</mjml>

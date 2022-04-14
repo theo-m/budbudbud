@@ -16,6 +16,7 @@ import { getUserByEmailOrNull, markUserInvitedBy } from "@/server/user/db";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import addDays from "date-fns/addDays";
 import * as crypto from "crypto";
+import { renderEmailInvite } from "../emails/render";
 
 // not exported by nextauth, borrowed from
 // https://github.com/nextauthjs/next-auth/blob/7a4bf038b119ae65ffbff67645e65d6ab9c4f847/packages/next-auth/src/core/routes/callback.ts#L203-L212
@@ -116,21 +117,47 @@ export default createRouter()
           : "http://localhost:3000";
 
       const cbUrl = `${base}/signin`;
-      const url = `${base}/api/auth/callback/email?callbackUrl=${cbUrl}&token=${token}&email=${userEmail}`;
+      const params = new URLSearchParams({
+        callbackUrl: cbUrl,
+        token,
+        email: userEmail,
+      });
+      const url = `${base}/api/auth/callback/email?${params}`;
+
+      const membersChain = group.users
+        .slice(0, -1)
+        .map((u) => u.name)
+        .join(", ");
+      const myName =
+        group.users.find((u) => u.userId === me.id)?.name ??
+        me.name ??
+        me.email;
+
+      const content = renderEmailInvite({
+        name,
+        inviter: myName,
+        group: group.name ?? "",
+        groupDesc:
+          group.users.length > 2
+            ? `${membersChain} and ${group.users.slice(-1)[0].name}`
+            : group.users.map((u) => u.name).join(" and "),
+        url,
+      });
 
       await mailClient.sendEmail({
         To: userEmail,
-        From: "ops@scorrilo.com",
-        TextBody: `${
-          me.name ?? me.email
-        } has invited you to join their budbudbud group, see what's happening there by clicking here:\n${url}`,
-        HtmlBody: `
-        <div>Hey there great news you've been invited by ${
-          me.name ?? me.email
-        } to join their <span style="color: hsl(287,79%,52%)">budbudbud</span></div>
-        <div>Simply <a href="${url}">click here</a> to see what's happening there</div>
-        `,
-        Subject: "You've been invited to budbudbud",
+        From: "Budbudbud <ops@scorrilo.com>",
+        ReplyTo: "ops@scorrilo.com",
+        Headers: [
+          {
+            Name: "List-Unsubscribe",
+            // TODO
+            Value: `${base}/api/trpc/unsubscribe`,
+          },
+        ],
+        TextBody: content.text,
+        HtmlBody: content.html,
+        Subject: `${myName} has invited you to budbudbud`,
       });
     }),
   })
