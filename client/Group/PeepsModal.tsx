@@ -27,16 +27,18 @@ const UserControl = ({ user }: { user: GroupWithUsers["users"][number] }) => {
       <button className="py-3 px-1 hover:bg-gray-100 text-xs">
         {user.admin ? "- admin rights" : "Make admin"}
       </button>
-      <button
-        className="p-2 hover:bg-gray-100"
-        onClick={() => removeUser({ userId: user.id, groupId: id })}
-      >
-        {removingUser ? (
-          <Spinner />
-        ) : (
-          <MinusCircleIcon className="text-red-500" height={24} />
-        )}
-      </button>
+      {user.admin && (
+        <button
+          className="p-2 hover:bg-gray-100"
+          onClick={() => removeUser({ userId: user.id, groupId: id })}
+        >
+          {removingUser ? (
+            <Spinner />
+          ) : (
+            <MinusCircleIcon className="text-red-500" height={24} />
+          )}
+        </button>
+      )}
     </div>
   );
 };
