@@ -1,6 +1,6 @@
-# fly.toml file generated for budbudbud-main on 2022-04-11T17:07:39+02:00
+# fly.toml file generated for budbudbud on 2022-04-15T08:43:29+02:00
 
-app = "budbudbud-main"
+app = "budbudbud"
 
 kill_signal = "SIGINT"
 kill_timeout = 5
