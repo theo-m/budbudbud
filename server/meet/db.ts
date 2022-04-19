@@ -21,8 +21,10 @@ export const meetById = async (id: string, requestAuthorEmail: string) => {
   return { ...meet, group };
 };
 
-export const voteOnMeet = (meetId: string, placeId: string, userId: string) =>
-  prisma.meetVote.create({ data: { userId, meetId, placeId } });
+export const voteOnMeet = (meetId: string, userId: string, placeId?: string) =>
+  prisma.meetVote.create({
+    data: { userId, meetId, placeId: placeId },
+  });
 
 export const deleteVote = (meetId: string, placeId: string, userId: string) =>
   prisma.meetVote.delete({

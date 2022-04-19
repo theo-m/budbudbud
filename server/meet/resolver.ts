@@ -34,31 +34,39 @@ export default createRouter()
     }),
     resolve: withAuthentication(async ({ groupId, day }, me) => {
       const group = await groupByIdWithUsers(groupId, me.email);
-      return await createMeet(group.id, day);
+
+      const meet = await createMeet(group.id, day);
+
+      await voteOnMeet(meet.id, me.id);
+      return meet;
     }),
   })
 
   .mutation("vote", {
     input: z.object({
       meetId: z.string().cuid(),
-      place: z.discriminatedUnion("type", [
-        z.object({ type: z.literal("new"), address: z.string().nonempty() }),
-        z.object({ type: z.literal("existing"), id: z.string().cuid() }),
-      ]),
+      place: z
+        .discriminatedUnion("type", [
+          z.object({ type: z.literal("new"), address: z.string().nonempty() }),
+          z.object({ type: z.literal("existing"), id: z.string().cuid() }),
+        ])
+        .optional(),
     }),
     resolve: withAuthentication(async ({ meetId, place: placeInput }, me) => {
       const meet = await meetById(meetId, me.email);
 
-      let place: Place;
-      switch (placeInput.type) {
-        case "new":
-          place = await createPlace(placeInput.address);
-          break;
-        case "existing":
-          place = await placeById(placeInput.id);
+      let place: Place | undefined;
+      if (placeInput) {
+        switch (placeInput.type) {
+          case "new":
+            place = await createPlace(placeInput.address);
+            break;
+          case "existing":
+            place = await placeById(placeInput.id);
+        }
       }
 
-      await voteOnMeet(meet.id, place.id, me.id);
+      await voteOnMeet(meet.id, me.id, place?.id);
     }),
   })
 

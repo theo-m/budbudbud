@@ -128,14 +128,14 @@ model Place {
 model MeetVote {
   id      String @id @default(cuid())
   meetId  String
-  placeId String
+  placeId String?
   userId  String
 
   createdAt DateTime @default(now())
 
 
   meet  Meet  @relation(fields: [meetId], references: [id], onDelete: Cascade)
-  place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  place Place? @relation(fields: [placeId], references: [id], onDelete: SetNull)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
 

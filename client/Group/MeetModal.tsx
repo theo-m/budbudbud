@@ -2,6 +2,7 @@ import { useState } from "react";
 import format from "date-fns/format";
 import {
   CheckCircleIcon,
+  LocationMarkerIcon,
   PlusCircleIcon,
   ThumbUpIcon,
 } from "@heroicons/react/solid";
@@ -13,12 +14,13 @@ import Dialog from "../components/Dialog";
 import Spinner from "../components/icons/Spinner";
 import { MeetVote } from "@prisma/client";
 import { useUser } from "../UserContext";
+import { GroupWithMeets } from "@/server/group/db";
 
 export default function MeetModal({ day }: { day: Date }) {
   const {
     userQuery: { data: user },
   } = useUser();
-  const [showDateModal, setShowDateModal] = useState<Date>();
+  const [showDateModal, setShowDateModal] = useState(false);
 
   const {
     id,
@@ -51,31 +53,52 @@ export default function MeetModal({ day }: { day: Date }) {
     {
       onSuccess: () => {
         refetchMeets();
-        setShowDateModal(undefined);
+        setShowDateModal(false);
       },
     }
   );
 
   const meet = meets?.find((m) => m.day.getDate() === day.getDate());
-  const places = meet?.meetVotes.reduce((acc, v) => {
-    acc[v.place.address] = [...(acc[v.place.address] ?? []), v];
+  const places =
+    meet?.meetVotes.reduce((acc, v) => {
+      if (v.place) acc[v.place.address] = [...(acc[v.place.address] ?? []), v];
+      return acc;
+    }, {} as Record<string, MeetVote[]>) ?? {};
+  const voters = meet?.meetVotes.reduce((acc, v) => {
+    acc = acc.find((u) => u.userId === v.userId) ? acc : [v, ...acc];
     return acc;
-  }, {} as Record<string, MeetVote[]>);
+  }, [] as GroupWithMeets["meets"][number]["meetVotes"]);
   const isAdmin = !!group?.users.find((u) => u.userId === user?.id && u.admin);
 
   return (
     <>
-      <button
-        className="flex flex-col gap-1 justify-center items-center"
-        onClick={() => setShowDateModal(day)}
-      >
-        <div className="h-12 w-12 rounded-full flex items-center justify-center bg-primary text-white relative text-xs">
-          {format(day, "dd/MM")}
+      <div className="flex items-center gap-4 p-2">
+        <span className="text-4xl">
+          {["🐻", "🐓", "🐯", "🦅", "🐈"][day.getDay() - 1]}
+        </span>
+        <span className="font-medium text-black">{format(day, "iiii")}</span>
+        <span className="">{format(day, "dd/MM")}</span>
+        <button
+          className="ml-auto flex items-center gap-2 hover:text-primary transition"
+          onClick={() =>
+            meet ? vote({ meetId: meet.id }) : createMeet({ groupId: id, day })
+          }
+        >
+          <span className="font-medium">{voters?.length ?? 0}</span>
+          <ThumbUpIcon height={36} />
+        </button>
+        <button
+          className="h-12 w-12 rounded-full flex items-center justify-center text-red-500 hover:text-red-500/80 transition relative text-xs"
+          onClick={() => setShowDateModal(true)}
+        >
+          <LocationMarkerIcon height={36} />
           {meet && (
             <>
-              <div className="bg-white text-primary text-xs absolute top-0 right-0 rounded-full border border-primary h-4 w-4 flex items-center justify-center">
-                {(meet.meetVotes.length ?? 0) > 0 ? meet.meetVotes.length : "v"}
-              </div>
+              {(Object.keys(places).length ?? 0) > 0 && (
+                <div className="bg-white text-red-500 text-xs absolute top-0 right-0 rounded-full border border-red-500 h-4 w-4 flex items-center justify-center">
+                  {Object.keys(places).length}
+                </div>
+              )}
               {meet.validated && (
                 <div className="bg-green-500 text-white text-xs absolute bottom-0 right-0 rounded-full h-4 w-4 flex items-center justify-center">
                   v
@@ -83,16 +106,13 @@ export default function MeetModal({ day }: { day: Date }) {
               )}
             </>
           )}
-        </div>
-        <span className="text-center text-sm">
-          {format(day, "iii").toLocaleLowerCase()}
-        </span>
-      </button>
+        </button>
+      </div>
 
       <Dialog
-        isOpen={!!showDateModal}
-        title={showDateModal && `${format(showDateModal, "iii dd/MM")} meet`}
-        onClose={() => setShowDateModal(undefined)}
+        isOpen={showDateModal}
+        title={`${format(day, "iii dd/MM")} meet`}
+        onClose={() => setShowDateModal(false)}
       >
         <div className="flex flex-col w-full gap-4">
           {!meet && (
@@ -100,7 +120,7 @@ export default function MeetModal({ day }: { day: Date }) {
               <p className="text-gray-500">No one's selected this day yet ☁️</p>
               <button
                 className="ml-auto rounded border border-primary/60 hover:bg-primary/90 bg-primary text-white p-1 font-medium w-fit flex items-center gap-2"
-                onClick={() => createMeet({ groupId: id, day: showDateModal! })}
+                onClick={() => createMeet({ groupId: id, day })}
               >
                 {creatingMeet ? (
                   <Spinner className="text-white" />
@@ -155,11 +175,14 @@ export default function MeetModal({ day }: { day: Date }) {
                             isVoted
                               ? unvote({
                                   meetId: meet.id,
-                                  placeId: v[0].placeId,
+                                  placeId: v[0].placeId!,
                                 })
                               : vote({
                                   meetId: meet.id,
-                                  place: { type: "existing", id: v[0].placeId },
+                                  place: {
+                                    type: "existing",
+                                    id: v[0].placeId!,
+                                  },
                                 })
                           }
                         >

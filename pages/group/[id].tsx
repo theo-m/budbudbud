@@ -66,7 +66,7 @@ function Group() {
     meetsQuery: { isLoading: loadingMeets },
   } = useGroupContext();
 
-  const [showBoard, setShowBoard] = useState(true);
+  const [showBoard, setShowBoard] = useState(false);
 
   const { handleSubmit, register, reset } = useForm<{ message: string }>();
   const { mutate: addMessage, isLoading: addingMessage } = trpc.useMutation(
@@ -75,7 +75,7 @@ function Group() {
   );
 
   return (
-    <div className="flex-grow w-full max-w-xl px-4">
+    <div className="flex-grow w-full max-w-xl px-4 pb-16">
       <Head>
         <title>{group?.name ?? "New group"}</title>
         <link rel="icon" href="/favicon.svg" />
@@ -93,7 +93,7 @@ function Group() {
             <CalendarIcon height={24} />
             <span>Next Week</span>
           </h2>
-          <div className="w-full flex flex-wrap justify-evenly relative">
+          <div className="w-full flex flex-col flex-wrap relative">
             {loadingMeets && (
               <div className="absolute top-0 right-0 h-4 w-4">
                 <Spinner />
