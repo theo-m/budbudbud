@@ -1,13 +1,13 @@
+import { MailIcon } from "@heroicons/react/solid";
+import Dialog from "client/components/Dialog";
 import { GetServerSideProps, InferGetServerSidePropsType } from "next";
+import Head from "next/head";
+import Link from "next/link";
 import { getSession, signOut } from "next-auth/react";
 
-import trpc from "../client/trpc";
 import Spinner from "../client/components/icons/Spinner";
-import Link from "next/link";
-import Head from "next/head";
+import trpc from "../client/trpc";
 import { useUser } from "../client/UserContext";
-import Dialog from "client/components/Dialog";
-import { MailIcon } from "@heroicons/react/solid";
 
 
 export const getServerSideProps: GetServerSideProps = async ({ req }) => {

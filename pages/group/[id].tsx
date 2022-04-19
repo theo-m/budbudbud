@@ -1,11 +1,3 @@
-import Head from "next/head";
-import { useState } from "react";
-import { GetServerSideProps } from "next";
-import { getSession } from "next-auth/react";
-import { useRouter } from "next/router";
-import superjson from "superjson";
-import nextMonday from "date-fns/nextMonday";
-import addDays from "date-fns/addDays";
 import {
   ArrowRightIcon,
   CalendarIcon,
@@ -13,17 +5,27 @@ import {
   ChevronUpIcon,
 } from "@heroicons/react/solid";
 import classNames from "classnames";
-import Spinner from "../../client/components/icons/Spinner";
+import addDays from "date-fns/addDays";
+import nextMonday from "date-fns/nextMonday";
+import { GetServerSideProps } from "next";
+import Head from "next/head";
+import { useRouter } from "next/router";
+import { getSession } from "next-auth/react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import superjson from "superjson";
+
 import { groupByIdWithUsers } from "@/server/group/db";
+
+import Spinner from "../../client/components/icons/Spinner";
+import Board from "../../client/Group/Board";
 import {
   GroupContextProvider,
   useGroupContext,
 } from "../../client/Group/GroupContext";
-import PeepsModal from "../../client/Group/PeepsModal";
-import NameChangeModal from "../../client/Group/NameChangeModal";
 import MeetModal from "../../client/Group/MeetModal";
-import Board from "../../client/Group/Board";
-import { useForm } from "react-hook-form";
+import NameChangeModal from "../../client/Group/NameChangeModal";
+import PeepsModal from "../../client/Group/PeepsModal";
 import trpc from "../../client/trpc";
 import { getQueryParam } from "../../shared/query";
 

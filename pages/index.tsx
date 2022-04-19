@@ -1,8 +1,7 @@
 import Head from "next/head";
 import Image from "next/image";
-
-import insync from "public/insync.svg";
 import calendar from "public/calendar.svg";
+import insync from "public/insync.svg";
 import work from "public/work.svg";
 
 export default function Landing() {

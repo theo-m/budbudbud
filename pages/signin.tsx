@@ -1,6 +1,6 @@
-import { signIn, useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { signIn, useSession } from "next-auth/react";
 import { ReactElement, useEffect, useState } from "react";
 
 export default function SignIn() {
