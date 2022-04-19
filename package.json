@@ -6,7 +6,7 @@
     "node": "14.x"
   },
   "scripts": {
-    "dev": "concurrently -n NEXT,TSCW,PRSM -c magenta,cyan,red \"next dev\" \"yarn tscw\" \"prisma generate --watch\"",
+    "dev": "concurrently --kill-others-on-fail -n NEXT,TSCW,PRSM -c magenta,cyan,red \"next dev\" \"yarn tscw\" \"prisma generate --watch\"",
     "tscw": "tsc --noEmit --incremental --preserveWatchOutput --pretty --watch",
     "build": "next build",
     "prebuild": "prisma generate",

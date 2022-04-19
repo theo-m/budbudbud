@@ -4,9 +4,10 @@ import { inferAsyncReturnType, TRPCError } from "@trpc/server";
 import { ProcedureResolver } from "@trpc/server/src/internals/procedure";
 import { getSession } from "next-auth/react";
 
-import { ServerErrors } from "./errors";
-import { prisma } from "@/server/clients";
 import { User } from "@prisma/client";
+
+import { getUserByEmail } from "@/server/user/db";
+import { ServerErrors } from "./errors";
 
 export async function createContext(opts?: trpcNext.CreateNextContextOptions) {
   if (!opts)
@@ -33,10 +34,7 @@ export function withAuthentication<In, Out>(
 ): ProcedureResolver<Context, In, Out> {
   return async ({ ctx, input }) => {
     if (!ctx.user || !ctx.user.email) throw ServerErrors.AuthError;
-    const user = await prisma.user.findUnique({
-      where: { email: ctx.user.email },
-      rejectOnNotFound: true,
-    });
+    const user = await getUserByEmail(ctx.user.email);
 
     return fn(input, user, ctx);
   };

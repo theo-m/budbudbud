@@ -5,6 +5,10 @@ import trpc from "../client/trpc";
 import Spinner from "../client/components/icons/Spinner";
 import Link from "next/link";
 import Head from "next/head";
+import { useUser } from "../client/UserContext";
+import Dialog from "client/components/Dialog";
+import { MailIcon } from "@heroicons/react/solid";
+
 
 export const getServerSideProps: GetServerSideProps = async ({ req }) => {
   const res = await getSession({ req });
@@ -23,11 +27,50 @@ export default function Me({
       onSuccess: () => refetch(),
     }
   );
+  const {
+    userQuery: { data: userReloaded, refetch: refetchUser },
+  } = useUser();
+  const { mutate: markFirstLogin, isLoading: marking } = trpc.useMutation(
+    "user/firstLogin",
+    { onSuccess: () => refetchUser() }
+  );
+
   return (
     <div className="flex-grow flex flex-col px-4 gap-4 py-2 w-full max-w-xl">
       <Head>
         <title>Me</title>
       </Head>
+      <Dialog
+        title="Welcome!"
+        isOpen={userReloaded ? !userReloaded.firstLoginAt : false}
+        onClose={() => markFirstLogin()}
+      >
+        <div className="flex flex-col gap-2 w-full">
+          <div>Hey it's your first visit here, so cool! 🎉</div>
+          <p>
+            This just to say hi 👋, you're one of the first users - do reach out
+            if something's unclear or you have ideas on how to improve.
+          </p>
+          <div className="mt-8 ml-auto flex items-center justify-between">
+            {marking && <Spinner />}
+            <div className="flex items-center rounded border divide-x overflow-hidden">
+              <a
+                className="py-1 px-4 inline-flex gap-2 text-primary hover:underline"
+                href="mailto:tmatussiere+budbudbud@gmail.com"
+              >
+                <MailIcon height={24} />
+                <span className="font-normal">reach out</span>
+              </a>
+              <button
+                className="bg-primary text-white py-1 px-4 font-semibold"
+                onClick={() => markFirstLogin()}
+              >
+                Ok cool
+              </button>
+            </div>
+          </div>
+        </div>
+      </Dialog>
       <div className="flex items-center gap-4 justify-between">
         <span>Logged in as {user?.email}</span>
         <button

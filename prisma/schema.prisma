@@ -48,6 +48,7 @@ model User {
   image         String?
   invitedById   String?
   invitedAt     DateTime?
+  firstLoginAt  DateTime?
 
   invitedBy     User?          @relation("invite", fields: [invitedById], references: [id], onDelete: SetNull)
   invited       User[]         @relation("invite")

@@ -89,3 +89,23 @@ export const updateGroupName = (groupId: string, name: string) =>
 
 export const newMessage = (groupId: string, text: string, authorId: string) =>
   prisma.groupMessage.create({ data: { authorId, text, groupId } });
+
+export const userGroups = (userId: string) =>
+  prisma.userGroup
+    .findMany({
+      select: { groupId: true },
+      where: { userId },
+    })
+    .then((p) => p.map(({ groupId }) => groupId))
+    .then((groupIds) =>
+      prisma.group.findMany({
+        where: { id: { in: groupIds } },
+        include: {
+          userGroups: {
+            include: {
+              user: { select: { id: true, name: true, email: true } },
+            },
+          },
+        },
+      })
+    );

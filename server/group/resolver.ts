@@ -10,6 +10,7 @@ import {
   newMessage,
   removeUserFromGroup,
   updateGroupName,
+  userGroups,
 } from "@/server/group/db";
 import { ServerErrors } from "@/server/errors";
 import { getUserByEmailOrNull, markUserInvitedBy } from "@/server/user/db";
@@ -43,25 +44,7 @@ export default createRouter()
   })
 
   .query("mine", {
-    resolve: withAuthentication(async (_, me) => {
-      const groupIds: string[] = await prisma.userGroup
-        .findMany({
-          select: { groupId: true },
-          where: { userId: { equals: me.id } },
-        })
-        .then((p) => p.map(({ groupId }) => groupId));
-
-      return await prisma.group.findMany({
-        where: { id: { in: groupIds } },
-        include: {
-          userGroups: {
-            include: {
-              user: { select: { id: true, name: true, email: true } },
-            },
-          },
-        },
-      });
-    }),
+    resolve: withAuthentication(async (_, me) => userGroups(me.id)),
   })
 
   .mutation("removeUser", {
@@ -116,7 +99,7 @@ export default createRouter()
           ? process.env.VERCEL_URL
           : "http://localhost:3000";
 
-      const cbUrl = `${base}/signin`;
+      const cbUrl = `${base}/me`;
       const params = new URLSearchParams({
         callbackUrl: cbUrl,
         token,
@@ -138,6 +121,7 @@ export default createRouter()
         inviter: myName,
         group: group.name ?? "",
         groupDesc:
+          // TODO: x, y and n others, if group of 1 say nothing...
           group.users.length > 2
             ? `${membersChain} and ${group.users.slice(-1)[0].name}`
             : group.users.map((u) => u.name).join(" and "),
