@@ -26,10 +26,15 @@ export const voteOnMeet = (meetId: string, userId: string, placeId?: string) =>
     data: { userId, meetId, placeId: placeId },
   });
 
-export const deleteVote = (meetId: string, placeId: string, userId: string) =>
-  prisma.meetVote.delete({
-    where: { meetId_placeId_userId: { userId, meetId, placeId } },
-  });
+export const deleteVote = (meetId: string, userId: string, placeId?: string) =>
+  // https://github.com/prisma/prisma/issues/3197
+  placeId
+    ? prisma.meetVote.delete({
+        where: { meetId_placeId_userId: { userId, meetId, placeId } },
+      })
+    : prisma.meetVote.deleteMany({
+        where: { userId, meetId, placeId: { equals: null } },
+      });
 
 export const markValidated = (id: string) =>
   prisma.meet.update({ where: { id }, data: { validated: true } });

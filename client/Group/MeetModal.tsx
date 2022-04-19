@@ -4,6 +4,7 @@ import {
   CheckCircleIcon,
   LocationMarkerIcon,
   PlusCircleIcon,
+  ThumbDownIcon,
   ThumbUpIcon,
 } from "@heroicons/react/solid";
 import classNames from "classnames";
@@ -69,6 +70,9 @@ export default function MeetModal({ day }: { day: Date }) {
     return acc;
   }, [] as GroupWithMeets["meets"][number]["meetVotes"]);
   const isAdmin = !!group?.users.find((u) => u.userId === user?.id && u.admin);
+  const hasVotedWithoutPlace = meet
+    ? !!meet.meetVotes.find((mv) => mv.userId === user?.id && !mv.placeId)
+    : false;
 
   return (
     <>
@@ -81,11 +85,19 @@ export default function MeetModal({ day }: { day: Date }) {
         <button
           className="ml-auto flex items-center gap-2 hover:text-primary transition"
           onClick={() =>
-            meet ? vote({ meetId: meet.id }) : createMeet({ groupId: id, day })
+            meet
+              ? hasVotedWithoutPlace
+                ? unvote({ meetId: meet.id })
+                : vote({ meetId: meet.id })
+              : createMeet({ groupId: id, day })
           }
         >
           <span className="font-medium">{voters?.length ?? 0}</span>
-          <ThumbUpIcon height={36} />
+          {hasVotedWithoutPlace ? (
+            <ThumbDownIcon height={36} />
+          ) : (
+            <ThumbUpIcon height={36} />
+          )}
         </button>
         <button
           className="h-12 w-12 rounded-full flex items-center justify-center text-red-500 hover:text-red-500/80 transition relative text-xs"

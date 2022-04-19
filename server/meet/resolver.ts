@@ -64,6 +64,7 @@ export default createRouter()
           case "existing":
             place = await placeById(placeInput.id);
         }
+        await voteOnMeet(meet.id, me.id);
       }
 
       await voteOnMeet(meet.id, me.id, place?.id);
@@ -71,10 +72,14 @@ export default createRouter()
   })
 
   .mutation("removeVote", {
-    input: z.object({ meetId: z.string().cuid(), placeId: z.string().cuid() }),
-    resolve: withAuthentication(({ meetId, placeId }, me) =>
-      deleteVote(meetId, placeId, me.id)
-    ),
+    input: z.object({
+      meetId: z.string().cuid(),
+      placeId: z.string().cuid().optional(),
+    }),
+    resolve: withAuthentication(async ({ meetId, placeId }, me) => {
+      await deleteVote(meetId, me.id, placeId);
+      return;
+    }),
   })
 
   .mutation("validate", {
